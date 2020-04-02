@@ -24,7 +24,7 @@ function makeid(length) {
 
 app.post("/post-file", (req, response) => {
   const form = formidable();
-
+  // receiving file from client
   form.parse(req, (err, fields, files) => {
     if (err) {
       next(err);
@@ -33,7 +33,7 @@ app.post("/post-file", (req, response) => {
     // rename file
     var oldpath = files.file.path;
     var newpath = oldpath + files.file.name;
-
+    console.log("Server 1 got file named" + files.file.name);
     fs.rename(oldpath, newpath, function(err) {
       if (err) throw err;
       // sending file to server 2
@@ -47,9 +47,13 @@ app.post("/post-file", (req, response) => {
           file: fs.createReadStream(newpath)
         }
       };
-
+      console.log(
+        "Server 1 send GET request to server 2 with x-routing-key = " +
+          options.headers["X-ROUTING-KEY"]
+      );
       request(options, function(err, res, body) {
         if (err) console.log(err);
+        console.log(body);
         // send back to client
         response.send(body);
       });

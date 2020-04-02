@@ -41,9 +41,11 @@ function compressFile(originPath, compressedPath, routingKey) {
                   routingKey,
                   Buffer.from(zip_percentage + "%")
                 );
+                console.log("current percentage =>", current_percentage);
               }
             })
             .on("finish", _ => {
+              console.log("current percentage =>", 100);
               ch.publish(exchange, routingKey, Buffer.from(100 + "%"));
               resolve();
             });
@@ -56,21 +58,28 @@ function compressFile(originPath, compressedPath, routingKey) {
 }
 
 app.post("/post-file", (req, res) => {
+  // receiving file from server 1
   if (req.files) {
     const { file } = req.files;
     const { name } = file;
     const uploadedPath = "./upload/" + name;
+    // store file to local folder
     file.mv(uploadedPath, err => {
       if (err) {
+        console.log(err);
         res.status(500).send("error uploading files");
       } else {
         const compressedPath = "./compressed/" + name + ".zip";
+        // send response to server 1 with generated routing key
         res.send(req.headers["x-routing-key"]);
+        // starting the background process
+
         compressFile(uploadedPath, compressedPath, req.headers["x-routing-key"])
           .then(() => {
             console.log("Success compressing file");
           })
           .catch(e => {
+            console.log(e);
             res.status(500).send("failed compress file");
           });
       }
