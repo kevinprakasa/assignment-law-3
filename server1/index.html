@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Server 1</title>
+  </head>
+  <style>
+    #progress-bar {
+      height: 50px;
+      width: 0;
+      background: black;
+    }
+  </style>
+  <body>
+    <h1>Let me help you compress your file!</h1>
+    <h3>Just upload your files on below input</h3>
+    <input type="file" name="file" id="file" />
+    <input type="submit" onclick="onSubmitFile()" />
+    <span id="error-msg"></span>
+    <div id="initial-hidden" style="display: none">
+      <h1>Current compressing progress</h1>
+      <div id="progress-bar"></div>
+      <div id="percent-num">0%</div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.1.4/sockjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stomp.js/2.3.3/stomp.min.js"></script>
+    <script type="text/javascript"></script>
+    <script>
+      function onSubmitFile() {
+        console.log("submit file");
+        var file = document.getElementById("file").files[0];
+        const xhr = new XMLHttpRequest();
+        const fd = new FormData();
+        const uri = "http://localhost:3000/post-file";
+
+        xhr.open("POST", uri, true);
+        xhr.onreadystatechange = function() {
+          if (xhr.readyState == 4 && xhr.status == 200) {
+            WebSocketTest(xhr.responseText);
+          }
+        };
+        fd.append("file", file);
+        // Initiate a multipart/form-data upload
+        xhr.send(fd);
+      }
+
+      function WebSocketTest(routingKey) {
+        document.getElementById("initial-hidden").style.display = "block";
+        if ("WebSocket" in window) {
+          var ws_stomp_display = new SockJS(
+            "http://152.118.148.95:15674/stomp"
+          );
+          var client_display = Stomp.over(ws_stomp_display);
+          var mq_queue_display = "/exchange/1606917696/" + routingKey;
+          var on_connect_display = function() {
+            console.log("connected");
+            client_display.subscribe(mq_queue_display, on_message_display);
+          };
+          var on_error_display = function() {
+            console.log("error");
+          };
+          var on_message_display = function(m) {
+            console.log("message received", m.body);
+            const percentage = m.body.match(/\d+/g)[0];
+            document.getElementById("percent-num").innerHTML = percentage + "%";
+            const totalWidth = 600;
+            document.getElementById("progress-bar").style.width =
+              totalWidth * (parseInt(percentage, 10) / 100) + "px";
+
+            console.log(m.body.match(/\d+/g)[0]);
+          };
+          client_display.connect(
+            "0806444524",
+            "0806444524",
+            on_connect_display,
+            on_error_display,
+            "/0806444524"
+          );
+        } else {
+          // The browser doesn't support WebSocket
+          alert("WebSocket NOT supported by your Browser!");
+        }
+      }
+    </script>
+  </body>
+</html>
